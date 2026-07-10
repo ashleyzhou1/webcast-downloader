@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Webcast Downloader Helper",
+  "version": "1.0",
+  "description": "Captures webcast media URLs for the Earnings Call Downloader app",
+  "permissions": [
+    "webRequest",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://127.0.0.1:8001/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Webcast Downloader Helper"
+  }
+}

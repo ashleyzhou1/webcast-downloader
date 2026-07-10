@@ -1,0 +1,22 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac
+.DS_Store
+
+# Session files - contain real auth cookies, never commit
+sessions/*.json
+
+# Temp downloads
+*.mp3
+*.mp4
+*.wav
+*.m4a
+
+# PyInstaller
+dist/
+build/
+*.spec
