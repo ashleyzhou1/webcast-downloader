@@ -27,15 +27,6 @@
   .btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--accent); color: #0d0f12; border: none; border-radius: 8px; font-family: var(--font-sans); font-size: 0.875rem; font-weight: 600; padding: 0.75rem 1.25rem; cursor: pointer; transition: opacity 0.15s; width: 100%; }
   .btn:hover { opacity: 0.85; }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* Extension status */
-  .ext-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.875rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-  .ext-dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; flex-shrink: 0; transition: background 0.3s; }
-  .ext-dot.ok { background: var(--accent); }
-  .ext-label { font-size: 0.8125rem; color: var(--text-secondary); flex: 1; }
-  .ext-label strong { color: var(--text-primary); }
-
-  /* Log */
   .log-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: none; }
   .log-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .log-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-secondary); }
@@ -49,14 +40,10 @@
   .line.success { color: var(--accent); }
   .line.error { color: #f87171; }
   .line.warn { color: #fbbf24; }
-
-  /* Download ready */
   .ready-card { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 1.25rem; display: none; align-items: center; justify-content: space-between; gap: 1rem; }
   .ready-info strong { display: block; color: var(--text-primary); font-size: 0.9375rem; margin-bottom: 2px; }
   .ready-info span { font-size: 0.8125rem; color: var(--text-secondary); }
   .save-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent); color: #0d0f12; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; text-decoration: none; white-space: nowrap; }
-
-  /* Platform list */
   .platforms { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
   .plat-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; }
   .plat-item { display: flex; align-items: center; gap: 0.65rem; font-size: 0.8125rem; color: var(--text-secondary); padding: 3px 0; }
@@ -75,13 +62,6 @@
 
 <div class="main">
 
-  <!-- Extension status -->
-  <div class="ext-row">
-    <div class="ext-dot" id="extDot"></div>
-    <span class="ext-label" id="extLabel">Checking for Chrome extension...</span>
-  </div>
-
-  <!-- Form -->
   <div class="card">
     <div class="field">
       <label>Webcast URL</label>
@@ -92,10 +72,25 @@
       <label>Output filename (no extension)</label>
       <input type="text" id="nameInput" placeholder="e.g. amd-q1-2026" />
     </div>
+    <div class="field">
+      <label>Company name</label>
+      <input type="text" id="companyInput" placeholder="e.g. Advanced Micro Devices" />
+    </div>
+    <div class="field">
+      <label>Ticker</label>
+      <input type="text" id="tickerInput" placeholder="e.g. AMD" />
+    </div>
+    <div class="field">
+      <label>Quarter</label>
+      <input type="text" id="quarterInput" placeholder="e.g. Q1 2026" />
+    </div>
+    <div class="field">
+      <label>Published date</label>
+      <input type="text" id="dateInput" placeholder="e.g. 2026-05-06" />
+    </div>
     <button class="btn" id="dlBtn" onclick="startDownload()">&nbsp; Download Audio</button>
   </div>
 
-  <!-- Progress log -->
   <div class="log-card" id="logCard">
     <div class="log-header">
       <span class="log-label">Progress</span>
@@ -107,7 +102,6 @@
     <div class="log-body" id="logBody"></div>
   </div>
 
-  <!-- Download ready -->
   <div class="ready-card" id="readyCard">
     <div class="ready-info">
       <strong id="readyName"></strong>
@@ -116,63 +110,19 @@
     <a class="save-btn" id="saveBtn">Save mp3</a>
   </div>
 
-  <!-- Supported platforms -->
   <div class="platforms">
     <div class="plat-title">Supported platforms</div>
     <div class="plat-item"><div class="dot green"></div>YouTube — fully automatic</div>
     <div class="plat-item"><div class="dot green"></div>ON24 — fully automatic</div>
     <div class="plat-item"><div class="dot green"></div>Direct mp4/mp3 links (AppLovin, Q4 CDN, etc.) — fully automatic</div>
-    <div class="plat-item"><div class="dot green"></div>Q4 Inc event pages — fully automatic, no action needed</div>
+    <div class="plat-item"><div class="dot yellow"></div>Q4 Inc event pages — browser opens, click play</div>
     <div class="plat-item"><div class="dot yellow"></div>edge.media-server.com (ARM, INTC, AMAT, SanDisk, etc.) — browser opens, click play</div>
+    <div class="plat-item"><div class="dot yellow"></div>webcasts.com (Goldman Sachs, Nvidia, etc.) — browser opens, click play</div>
   </div>
 
 </div>
 
 <script>
-// ── Extension detection ──────────────────────────────────────────────────────
-function checkExtension() {
-  fetch('/api/ext-ping')
-    .then(r => r.json())
-    .then(() => {
-      // Server is up, now check if extension can reach server
-      // Extension sets a cookie or we detect via custom header
-      document.getElementById('extDot').classList.add('ok');
-      document.getElementById('extLabel').innerHTML =
-        '<strong>Extension connected</strong> — all platforms supported';
-    })
-    .catch(() => {});
-
-  // Extension signals itself via postMessage
-  window.addEventListener('message', e => {
-    if (e.data === 'webcast-helper-ready') {
-      document.getElementById('extDot').classList.add('ok');
-      document.getElementById('extLabel').innerHTML =
-        '<strong>Extension connected</strong> — all platforms supported';
-    }
-  });
-
-  setTimeout(() => {
-    if (!document.getElementById('extDot').classList.contains('ok')) {
-      document.getElementById('extLabel').innerHTML =
-        'Extension not detected — <a href="#" onclick="showExtSetup()" style="color:var(--accent)">install it</a> for edge.media-server.com support';
-    }
-  }, 2000);
-}
-
-function showExtSetup() {
-  alert(
-    'To install the extension:\n\n' +
-    '1. Open Chrome and go to chrome://extensions\n' +
-    '2. Turn on Developer Mode (top right)\n' +
-    '3. Click "Load unpacked"\n' +
-    '4. Select the "extension" folder included with this app\n\n' +
-    'Refresh this page after installing.'
-  );
-}
-
-checkExtension();
-
-// ── Download ─────────────────────────────────────────────────────────────────
 function log(msg, level) {
   const body = document.getElementById('logBody');
   const div = document.createElement('div');
@@ -185,7 +135,11 @@ function log(msg, level) {
 function startDownload() {
   const url = document.getElementById('urlInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
-  if (!url || !name) { alert('Please fill in both fields.'); return; }
+  const company = document.getElementById('companyInput').value.trim();
+  const ticker = document.getElementById('tickerInput').value.trim();
+  const quarter = document.getElementById('quarterInput').value.trim();
+  const pubDate = document.getElementById('dateInput').value.trim();
+  if (!url || !name) { alert('Please fill in the URL and filename fields.'); return; }
 
   document.getElementById('dlBtn').disabled = true;
   document.getElementById('logCard').style.display = 'block';
@@ -194,24 +148,20 @@ function startDownload() {
   document.getElementById('spinner').style.display = 'block';
   document.getElementById('statusTxt').textContent = 'Running...';
 
-  const src = new EventSource(
-    `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
-  );
+  const params = new URLSearchParams({
+    url, name,
+    company_name: company, ticker, quarter, published_date: pubDate,
+  });
+  const src = new EventSource(`/api/download?${params.toString()}`);
 
   src.onmessage = e => {
     const d = JSON.parse(e.data);
-
-    if (d.type === 'job_id') {
-      // Tell extension which job to report media URLs to
-      window.postMessage({ type: 'webcast-set-job', jobId: d.jobId }, '*');
-    }
-
     if (d.type === 'log') log(d.message, d.level);
 
     if (d.type === 'done') {
       src.close();
       document.getElementById('spinner').style.display = 'none';
-      document.getElementById('statusTxt').textContent = 'Complete ✅';
+      document.getElementById('statusTxt').textContent = 'Complete';
       document.getElementById('dlBtn').disabled = false;
       document.getElementById('readyCard').style.display = 'flex';
       document.getElementById('readyName').textContent = `${name}.mp3`;
@@ -223,7 +173,7 @@ function startDownload() {
     if (d.type === 'error') {
       src.close();
       document.getElementById('spinner').style.display = 'none';
-      document.getElementById('statusTxt').textContent = 'Failed ❌';
+      document.getElementById('statusTxt').textContent = 'Failed';
       document.getElementById('dlBtn').disabled = false;
     }
   };

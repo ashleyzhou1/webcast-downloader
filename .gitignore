@@ -20,3 +20,4 @@ sessions/*.json
 dist/
 build/
 *.spec
+samples/

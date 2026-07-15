@@ -63,6 +63,48 @@ def _guess_extension(url: str, content_type: str = "") -> str:
         return ".docx"
     return ""
 
+def _guess_referer(url: str) -> str:
+    """Some CDNs reject stream requests unless the Referer header matches
+    the page that would normally be playing the media."""
+    if "webcasts.com" in url:
+        return "https://event.webcasts.com/"
+    return None
+
+
+def download_hls_stream(url: str, output_dir: str = "../samples", output_path: str = None) -> Path:
+    """
+    Download and stitch an HLS stream (.m3u8 playlist) into a single mp3
+    using ffmpeg directly. Platforms like webcasts.com serve audio as
+    segmented, signed, time-limited HLS streams -- capturing each segment
+    live via a browser is racy. ffmpeg fetches and stitches every segment
+    itself in one shot, using the same signed token in the .m3u8 URL.
+    """
+    if output_path:
+        # Caller gave an exact file path to use -- skip auto-naming.
+        local_path = Path(output_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        url_filename = unquote(Path(urlparse(url).path).stem) or "downloaded_media"
+        if url_filename.lower() in ("chunklist", "playlist"):
+            url_filename = "webcast_audio"
+        local_path = output_dir / f"{url_filename}.mp3"
+
+    cmd = ["ffmpeg", "-y"]
+    referer = _guess_referer(url)
+    if referer:
+        cmd += ["-headers", f"Referer: {referer}\r\n"]
+    cmd += ["-i", url, "-vn", "-acodec", "libmp3lame", "-q:a", "2", str(local_path)]
+
+    print(f"Downloading HLS stream via ffmpeg: {url}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed to download HLS stream:\n{result.stderr}")
+
+    print(f"Downloaded HLS stream to: {local_path}")
+    return local_path
 
 def download_file(url: str, output_dir: str = "../samples") -> Path:
     """Download the raw file at `url` into `output_dir`. Returns the local
@@ -126,6 +168,8 @@ def download_media(url: str, output_dir: str = "../samples") -> Path:
 
     Does not handle embedded players / pages without a direct file link.
     """
+    if urlparse(url).path.lower().endswith(".m3u8"):
+        return download_hls_stream(url, output_dir=output_dir)
     local_path = download_file(url, output_dir=output_dir)
     ext = local_path.suffix.lower()
 
